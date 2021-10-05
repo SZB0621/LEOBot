@@ -1,4 +1,4 @@
-function [isReturned_ret,leftStartArea_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction)
+function [isReturned_ret,leftStartArea_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction,referenceDistance)
 vrep=remApi('remoteApi');
 
 V_robot = 0.7;
@@ -8,7 +8,8 @@ d = 0.415;
 
 
 % Controller parameters
-ref = 0.9; % Reference Value
+% ref = 0.7; 
+ref = referenceDistance;% Reference Value
 error = 0;  % Error init
 Ap = 0.85; % Gain
 Ki = 0.065; % Integrator Constant
@@ -38,11 +39,13 @@ prev_err= [0];
 % Control loop
 tic
 while ~stop && (~isReturned || ~leftStartArea)
-    
     [returnCode,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
     tElapsed = toc;
     tic
     y = currentDistance(3); % Controlled signal
+    if (y > 1.5) % If the wall is out of range bound the distance value with the max
+        y = 1.5;
+    end
     error = ref - y; % Error signal
     prev_err = [prev_err tElapsed*error];
     I = sum(prev_err);
@@ -52,17 +55,17 @@ while ~stop && (~isReturned || ~leftStartArea)
     if direction == 1
         u = -u;
     end
-
-    [V_l,V_r]=calculateWheelSpeed(u,d,V_robot);
     
+    [V_l,V_r]=calculateWheelSpeed(u,d,V_robot);
+    fprintf('U: %.4f, W_L: %.4f W_R: %.4f! \n',u,V_l,V_r);
     % In case of end of the wall (~90 degrees turn)
     if dState == 0
         if direction == 1
             [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.6,vrep.simx_opmode_blocking);
             [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.4,vrep.simx_opmode_blocking);
         else
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.4,vrep.simx_opmode_blocking);
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.6,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.6,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.7,vrep.simx_opmode_blocking);
         end
     else
         [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,V_l,vrep.simx_opmode_blocking);
