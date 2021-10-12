@@ -56,13 +56,13 @@ if (clientID>-1)
            turn(100,clientID,left_Motor,right_Motor,pioneer_Robot,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle,right_LaserSensor_front,right_LaserSensor_rear,left_LaserSensor_front,left_LaserSensor_rear,back_LaserSensor_right,back_LaserSensor_left,startOrientation,normalToWall,direction,turnVelocity);
            [~, global_startPosition]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
            direction = 1;
-           [isReturned,leftStartArea] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,global_startPosition,leftStartArea,direction,referenceDistance);
+           [isReturned,leftStartArea,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,global_startPosition,leftStartArea,direction,referenceDistance,[0 0],[0 0],false);
            
            % Measure the complete area
            while ~areaMeasured
                [~,local_startPosition]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
                turn(100,clientID,left_Motor,right_Motor,pioneer_Robot,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle,right_LaserSensor_front,right_LaserSensor_rear,left_LaserSensor_front,left_LaserSensor_rear,back_LaserSensor_right,back_LaserSensor_left,startOrientation,normalToWall,direction,turnVelocity);
-               [isReturned,leftStartArea] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,global_startPosition,leftStartArea,direction,referenceDistance);
+               [isReturned,leftStartArea,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,global_startPosition,leftStartArea,direction,referenceDistance,[0 0],[0 0],false);
                [~,local_endPosition]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
                area = [area pdist([local_startPosition(1),local_startPosition(2),local_startPosition(3);local_endPosition(1),local_endPosition(2),local_endPosition(3)],'euclidean')];
                if isReturned && leftStartArea
@@ -87,7 +87,7 @@ if (clientID>-1)
            isEven = ~mod(stripsCount,2);
            
            % Get into startposition (NE - corner)
-           [~,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,[0 0 0],leftStartArea,direction,referenceDistance);
+           [~,~,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,[0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false);
            % Start position's coordinates
            [~,NEcorner]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
            % Goal position's coordinates (odd - SW, even - SE)
@@ -115,7 +115,7 @@ if (clientID>-1)
                [~,dState,~,~,~]=vrep.simxReadProximitySensor(clientID,right_LaserSensor_front,vrep.simx_opmode_blocking);
                if dState
                   direction = 1;
-                  [~,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,[0 0 0],leftStartArea,direction,referenceDistance); 
+                  [~,~,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,[0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false); 
                else
                    moveTilObstacle(clientID,left_Motor,right_Motor,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle);
 % %                    Placeholder for obstacle avoidance function 
@@ -148,18 +148,22 @@ if (clientID>-1)
                turn(100,clientID,left_Motor,right_Motor,pioneer_Robot,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle,right_LaserSensor_front,right_LaserSensor_rear,left_LaserSensor_front,left_LaserSensor_rear,back_LaserSensor_right,back_LaserSensor_left,startOrientation,normalToWall,direction,turnVelocity);
                [~,dState,~,~,~]=vrep.simxReadProximitySensor(clientID,left_LaserSensor_front,vrep.simx_opmode_blocking);
                if dState
-                  direction = -1;
-                  [~,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,[0 0 0],leftStartArea,direction,referenceDistance); 
+                   direction = -1;
+                   [~,~,~] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,[0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false); 
                else
-                   [xyz_end] = calcLineEndPosition(clientID,pioneer_Robot,reference_Box,wallB);
+                   [~, robotOrientationEuler]=vrep.simxGetObjectOrientation(clientID,pioneer_Robot,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
+                   robotOrientationEuler_deg = rad2deg(robotOrientationEuler);
+                   lineStartOrientation= robotOrientationEuler_deg(3);                        
+                   [~, lineStartPoint]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
+
+                   [lineEndPoint] = calcLineEndPosition(clientID,pioneer_Robot,reference_Box,wallB);
                    moveTilObstacle(clientID,left_Motor,right_Motor,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle);
-                   [~, xyz_current]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
-                   dist = pdist([xyz_current(1),xyz_current(2),xyz_current(3);xyz_end(1),xyz_end(2),xyz_end(3)],'euclidean');
-                   fprintf(' %.4f \n',dist);
-                   fprintf('X: %.4f Y: %.4f \n X_E: %.4f Y_E: %.4f \n',xyz_current(1),xyz_current(2), xyz_end(1),xyz_end(2));
+                   [~, roundStartPoint]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
+                   dist = pdist([roundStartPoint(1),roundStartPoint(2),roundStartPoint(3);lineEndPoint(1),lineEndPoint(2),lineEndPoint(3)],'euclidean');
+
                    if dist <= wallB-0.5
                        fprintf('IT REACHED THE OBSTACLE \n');
-                       isReturned = roundAnObstacle(clientID,left_Motor,right_Motor,right_LaserSensor_front,right_LaserSensor_rear,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle,left_LaserSensor_front,left_LaserSensor_rear,back_LaserSensor_right,back_LaserSensor_left,pioneer_Robot,reference_Box,xyz_current);
+                       isReturned = roundAnObstacle(clientID,left_Motor,right_Motor,right_LaserSensor_front,right_LaserSensor_rear,front_LaserSensor,front_LaserSensor_rightAngle,front_LaserSensor_leftAngle,left_LaserSensor_front,left_LaserSensor_rear,back_LaserSensor_right,back_LaserSensor_left,pioneer_Robot,reference_Box,roundStartPoint,lineStartPoint,lineEndPoint);
 % %                    Placeholder for obstacle avoidance function
                        fprintf('CIRCLE DONE \n');
                    else

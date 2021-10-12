@@ -1,6 +1,7 @@
-function [isReturned_ret,leftStartArea_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction,referenceDistance)
+function [isReturned_ret,leftStartArea_ret,closestPoint_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances)
 vrep=remApi('remoteApi');
 
+% Robot parameters
 V_robot = 0.7;
 V_l = 0.5;
 V_r = 0.5;
@@ -21,25 +22,36 @@ else
     sensor_handler = left_LaserSensor_front;
 end
 
+% Init values
+
+if recordDistances
+    minDist = 100;
+    closestPoint = [100 100];
+    [~, StartPoint]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
+end
 
 % Move the robot forward
-[returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,V_l,vrep.simx_opmode_blocking);
-[returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,V_r,vrep.simx_opmode_blocking);
+[~]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,V_l,vrep.simx_opmode_blocking);
+[~]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,V_r,vrep.simx_opmode_blocking);
 
 % Stopping condition
-[returnCode,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
+[~,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
 isReturned = false;
 
 
 % Read the Right laser's value - Controlled attribute [y]
-[returnCode,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
+[~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
 
 distVal= [];
 prev_err= [0];
 % Control loop
 tic
 while ~stop && (~isReturned || ~leftStartArea)
-    [returnCode,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
+    [~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
+    if recordDistances
+        [~, point]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
+        [closestPoint,minDist] = closestPointFromLine(point,closestPoint,StartPoint,lineStartPoint,lineEndPoint,minDist);
+    end
     tElapsed = toc;
     tic
     y = currentDistance(3); % Controlled signal
@@ -73,7 +85,7 @@ while ~stop && (~isReturned || ~leftStartArea)
     end
 
     
-    [returnCode,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
+    [~,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
     if leftStartArea 
         isReturned = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,1);   
     else
@@ -85,6 +97,11 @@ while ~stop && (~isReturned || ~leftStartArea)
 end
 isReturned_ret = isReturned;
 leftStartArea_ret = leftStartArea;
+if recordDistances
+    closestPoint_ret = closestPoint;
+else
+    closestPoint_ret = [0 0];
+end
 
 toc
 

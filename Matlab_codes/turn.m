@@ -4,7 +4,7 @@ vrep=remApi('remoteApi');
 
 leftTurn = 0;
 rightTurn = 0;
-eps = 0.003; % For normal to wall check
+eps = 0.03; % For normal to wall check
 eps_2 = 0.1; % For start orientation
 eps_3 = 0.001; % For back turn
 phiCheck = 0;
@@ -103,8 +103,8 @@ elseif normalToWall == 1
     end
     
     % Now Both sensor have an object in the range turn slower
-    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,lMotorHandler,-0.5,vrep.simx_opmode_blocking);
-    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,rMotorHandler,0.5,vrep.simx_opmode_blocking);
+    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,lMotorHandler,-velocitySlow,vrep.simx_opmode_blocking);
+    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,rMotorHandler,velocitySlow,vrep.simx_opmode_blocking);
     
     [returnCode,detectionStateFRA,~,~,~]=vrep.simxReadProximitySensor(clientID,fLaserSensorRAHandler,vrep.simx_opmode_blocking);
     [returnCode,detectionStateRF,detectedPointRFLaserSensor,~,~]=vrep.simxReadProximitySensor(clientID,rLaserSensorFHandler,vrep.simx_opmode_blocking);
@@ -144,8 +144,8 @@ elseif normalToWall == -1
     end
     
     % Now Both sensor have an object in the range turn slower
-    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,lMotorHandler,0.5,vrep.simx_opmode_blocking);
-    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,rMotorHandler,-0.5,vrep.simx_opmode_blocking);
+    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,lMotorHandler,velocitySlow,vrep.simx_opmode_blocking);
+    [returnCode]=vrep.simxSetJointTargetVelocity(clientID,rMotorHandler,-velocitySlow,vrep.simx_opmode_blocking);
     
     % While the two sensors don't measure approx. the same value turn (while the robot is not normal to the wall)
     while (abs(detectedPointLFLaserSensor(3) - detectedPointLRLaserSensor(3)) > eps) || ((detectionStateLF == 0) && (detectionStateLR == 0)) || (detectionStateFLA == 1)
