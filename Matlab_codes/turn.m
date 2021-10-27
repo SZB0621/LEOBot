@@ -1,4 +1,4 @@
-function turn(phi,clientID,lMotorHandler,rMotorHandler,robotHandler,fLaserSensorHandle,fLaserSensorRAHandler,fLaserSensorLAHandler,rLaserSensorFHandler,rLaserSensorRHandler,lLaserSensorFHandler,lLaserSensorRHandler,bLaserSensorRHandler,bLaserSensorLHandler,startOrientation,normalToWall,direction,velocityFastArg)
+function turn(phi,clientID,lMotorHandler,rMotorHandler,robotHandler,fLaserSensorHandle,fLaserSensorRAHandler,fLaserSensorLAHandler,rLaserSensorFHandler,rLaserSensorRHandler,lLaserSensorFHandler,lLaserSensorRHandler,bLaserSensorRHandler,bLaserSensorLHandler,isStartOrientation,startOrientation,normalToWall,direction,velocityFastArg)
 
 vrep=remApi('remoteApi');
 
@@ -16,7 +16,7 @@ velocity = 0;
 goalOrientation = 0;
 
 
-[returnCode, robotOrientationEuler]=vrep.simxGetObjectOrientation(clientID,robotHandler,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
+[~, robotOrientationEuler]=vrep.simxGetObjectOrientation(clientID,robotHandler,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
 robotOrientationEuler_deg = rad2deg(robotOrientationEuler);
 currentOrientation = robotOrientationEuler_deg(3);
 if normalToWall == 0
@@ -37,8 +37,8 @@ if normalToWall == 0
 
     if phiCheck
     
-       if startOrientation
-           goalOrientation = 0;
+       if isStartOrientation
+           goalOrientation = startOrientation;
        else
             goalOrientation = currentOrientation + phi;
        end
@@ -51,7 +51,7 @@ if normalToWall == 0
     
 
        while (abs(goalOrientation - currentOrientation) > eps_2) 
-          fprintf('Goal orientation [deg]: %.4f, Current Orientation [deg]: %.4f \n', goalOrientation, currentOrientation);
+%           fprintf('Goal orientation [deg]: %.4f, Current Orientation [deg]: %.4f \n', goalOrientation, currentOrientation);
         
           if (abs(goalOrientation - currentOrientation) <= 15) || (abs(goalOrientation - currentOrientation + 360) <= 15) || (abs(goalOrientation - currentOrientation - 360) <= 15)
               velocity = velocitySlow;
@@ -115,7 +115,7 @@ elseif normalToWall == 1
         [returnCode,detectionStateRF,detectedPointRFLaserSensor,~,~]=vrep.simxReadProximitySensor(clientID,rLaserSensorFHandler,vrep.simx_opmode_blocking);
         [returnCode,detectionStateRR,detectedPointRRLaserSensor,~,~]=vrep.simxReadProximitySensor(clientID,rLaserSensorRHandler,vrep.simx_opmode_blocking);
 %         fprintf('Diff: %.4f \n Values: %.4f %.4f \n',abs(detectedPointRFLaserSensor(3) - detectedPointRRLaserSensor(3)), detectedPointRFLaserSensor(3),detectedPointRRLaserSensor(3));
-        fprintf('TURNING! \n');
+%         fprintf('TURNING! \n');
     end
     
     move(0,clientID,lMotorHandler,rMotorHandler);

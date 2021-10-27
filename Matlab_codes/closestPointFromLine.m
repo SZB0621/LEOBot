@@ -2,9 +2,9 @@ function [closestPoint,minimalDistance] = closestPointFromLine(point,prevPoint,S
 
     closestPoint = [];
     
-    DistanceFromLine = GetPointLineDistance(point(1),point(2),lineStartPoint(1),lineStartPoint(2),lineEndPoint(3),lineEndPoint(3));
+    DistanceFromLine = GetPointLineDistance(point(1),point(2),lineStartPoint(1),lineStartPoint(2),lineEndPoint(1),lineEndPoint(2));
     DistanceFromStartPoint = pdist([point(1),point(2),0;StartPoint(1),StartPoint(2),0],'euclidean');
-    if (DistanceFromLine < prevDist && DistanceFromStartPoint > 1)
+    if (DistanceFromLine < prevDist && DistanceFromStartPoint > 1.5)
         minimalDistance = DistanceFromLine;
         closestPoint(1) = point(1);
         closestPoint(2) = point(2);

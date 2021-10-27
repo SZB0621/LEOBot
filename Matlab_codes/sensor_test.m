@@ -20,20 +20,20 @@ if (clientID>-1)
 %        [returnCode,detectionStateRF,detectedPointRRLaserSensor,~,~]=vrep.simxReadProximitySensor(clientID,Right_LaserSensor_rear,vrep.simx_opmode_blocking);
        [~,pos]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
 %        line_coordinates = [2.6674809 11.2550821 11.5132065 4.3587499];
-       line_coordinates = [0 0 11.5132065 4.3587499];
-       distance = GetPointLineDistance(pos(1),pos(2),line_coordinates(1),line_coordinates(2),line_coordinates(3),line_coordinates(3));
-       fprintf('DISTANCE = %.4f \n',distance);
-       fprintf('CLOSEST POINT: X = %.4f Y = %.4f \n',closest_point(1),closest_point(2));
-       dist = pdist([line_coordinates(1),line_coordinates(2),0;pos(1),pos(2),0],'euclidean');
-       if (distance < prev_min && dist > 1)
-           prev_min = distance;
-           closest_point(1) = pos(1);
-           closest_point(2) = pos(2);
-       end
-%        [returnCode, robotOrientationEuler]=vrep.simxGetObjectOrientation(clientID,pioneer_Robot,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
-%        robotOrientationEuler_deg = rad2deg(robotOrientationEuler);
-%        currentOrientation = robotOrientationEuler_deg(3);
-%        fprintf('X: %.4f Y: %.4f \n ORI: %.4f \n',pos(1),pos(2), currentOrientation);
+%        line_coordinates = [0 0 11.5132065 4.3587499];
+%        distance = GetPointLineDistance(pos(1),pos(2),line_coordinates(1),line_coordinates(2),line_coordinates(3),line_coordinates(3));
+%        fprintf('DISTANCE = %.4f \n',distance);
+%        fprintf('CLOSEST POINT: X = %.4f Y = %.4f \n',closest_point(1),closest_point(2));
+%        dist = pdist([line_coordinates(1),line_coordinates(2),0;pos(1),pos(2),0],'euclidean');
+%        if (distance < prev_min && dist > 1)
+%            prev_min = distance;
+%            closest_point(1) = pos(1);
+%            closest_point(2) = pos(2);
+%        end
+       [returnCode, robotOrientationEuler]=vrep.simxGetObjectOrientation(clientID,pioneer_Robot,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
+       robotOrientationEuler_deg = rad2deg(robotOrientationEuler);
+       currentOrientation = robotOrientationEuler_deg(3);
+       fprintf('X: %.4f Y: %.4f \n ORI: %.4f \n',pos(1),pos(2), currentOrientation);
 %        fprintf('BR: %.4f    BL: %.4f \n',detectedPointBRLaserSensor(3), detectedPointBLLaserSensor(3));
 %        fprintf('%.4f %.4f \n',detectedPointRFLaserSensor(3),detectedPointRRLaserSensor(3));
 

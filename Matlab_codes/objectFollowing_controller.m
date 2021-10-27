@@ -1,4 +1,4 @@
-function [isReturned_ret,leftStartArea_ret,closestPoint_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances)
+function [isReturned_ret,leftStartArea_ret,closestPoint_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,endpoint)
 vrep=remApi('remoteApi');
 
 % Robot parameters
@@ -7,9 +7,15 @@ V_l = 0.5;
 V_r = 0.5;
 d = 0.415;
 
+% Mode parameters
+eps = 1; % Max range from the goal position
+if isEndPointGiven
+    leftStartArea = true;
+    startPosition = endpoint;
+    eps = 0.5;
+end
 
 % Controller parameters
-% ref = 0.7; 
 ref = referenceDistance;% Reference Value
 error = 0;  % Error init
 Ap = 0.85; % Gain
@@ -51,12 +57,15 @@ while ~stop && (~isReturned || ~leftStartArea)
     if recordDistances
         [~, point]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
         [closestPoint,minDist] = closestPointFromLine(point,closestPoint,StartPoint,lineStartPoint,lineEndPoint,minDist);
+        fprintf('closest: x - %.4f, y - %.4f MinDist: %.4f \n',closestPoint(1),closestPoint(2),minDist);
     end
     tElapsed = toc;
     tic
     y = currentDistance(3); % Controlled signal
-    if (y > 1.5) % If the wall is out of range bound the distance value with the max
+    if (y > 1.5) % Saturation
         y = 1.5;
+    elseif (y < -1.5)
+        y = -1.5;
     end
     error = ref - y; % Error signal
     prev_err = [prev_err tElapsed*error];
@@ -69,15 +78,17 @@ while ~stop && (~isReturned || ~leftStartArea)
     end
     
     [V_l,V_r]=calculateWheelSpeed(u,d,V_robot);
-    fprintf('U: %.4f, W_L: %.4f W_R: %.4f! \n',u,V_l,V_r);
+%     fprintf('Error: %.4f, U: %.4f \n',error,u);
+%     fprintf('U: %.4f, W_L: %.4f W_R: %.4f! \n',u,V_l,V_r);
+%     fprintf('dstate: %.4f \n',dState);
     % In case of end of the wall (~90 degrees turn)
     if dState == 0
         if direction == 1
             [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.6,vrep.simx_opmode_blocking);
             [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.4,vrep.simx_opmode_blocking);
         else
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.6,vrep.simx_opmode_blocking);
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.7,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.4,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.6,vrep.simx_opmode_blocking);
         end
     else
         [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,V_l,vrep.simx_opmode_blocking);
@@ -87,9 +98,10 @@ while ~stop && (~isReturned || ~leftStartArea)
     
     [~,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
     if leftStartArea 
-        isReturned = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,1);   
+        
+        isReturned = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,eps);   
     else
-        leftStartArea = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,1);
+        leftStartArea = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,eps);
         leftStartArea = ~leftStartArea; 
     end
     distVal=[distVal currentDistance(3)];
