@@ -1,5 +1,6 @@
-function [isReturned_ret,leftStartArea_ret,closestPoint_ret] = objectFollowing_controller(clientID,left_Motor,right_Motor,right_LaserSensor_front,front_LaserSensor,left_LaserSensor_front,pioneer_Robot,reference_Box,startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,endpoint)
+function [isReturned_ret,leftStartArea_ret,closestPoint_ret] = objectFollowing_controller(startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,endpoint)
 vrep=remApi('remoteApi');
+global simulationHandlers_t;
 
 % Robot parameters
 V_robot = 0.7;
@@ -12,7 +13,7 @@ eps = 1; % Max range from the goal position
 if isEndPointGiven
     leftStartArea = true;
     startPosition = endpoint;
-    eps = 0.5;
+    eps = 0.7;
 end
 
 % Controller parameters
@@ -23,9 +24,9 @@ Ki = 0.065; % Integrator Constant
 
 % Sensor value to watch
 if direction == 1
-    sensor_handler = right_LaserSensor_front;
+    sensor_handler = simulationHandlers_t.right_LaserSensor_front;
 else
-    sensor_handler = left_LaserSensor_front;
+    sensor_handler = simulationHandlers_t.left_LaserSensor_front;
 end
 
 % Init values
@@ -33,31 +34,31 @@ end
 if recordDistances
     minDist = 100;
     closestPoint = [100 100];
-    [~, StartPoint]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
+    [~, StartPoint]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
 end
 
 % Move the robot forward
-[~]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,V_l,vrep.simx_opmode_blocking);
-[~]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,V_r,vrep.simx_opmode_blocking);
+[~]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.left_Motor,V_l,vrep.simx_opmode_blocking);
+[~]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.right_Motor,V_r,vrep.simx_opmode_blocking);
 
 % Stopping condition
-[~,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
+[~,stop,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.front_LaserSensor,vrep.simx_opmode_blocking);
 isReturned = false;
 
 
 % Read the Right laser's value - Controlled attribute [y]
-[~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
+[~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,sensor_handler,vrep.simx_opmode_blocking);
 
 distVal= [];
 prev_err= [0];
 % Control loop
 tic
 while ~stop && (~isReturned || ~leftStartArea)
-    [~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(clientID,sensor_handler,vrep.simx_opmode_blocking);
+    [~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,sensor_handler,vrep.simx_opmode_blocking);
     if recordDistances
-        [~, point]=vrep.simxGetObjectPosition(clientID,pioneer_Robot,reference_Box,vrep.simx_opmode_blocking);
+        [~, point]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
         [closestPoint,minDist] = closestPointFromLine(point,closestPoint,StartPoint,lineStartPoint,lineEndPoint,minDist);
-        fprintf('closest: x - %.4f, y - %.4f MinDist: %.4f \n',closestPoint(1),closestPoint(2),minDist);
+%         fprintf('closest: x - %.4f, y - %.4f MinDist: %.4f \n',closestPoint(1),closestPoint(2),minDist);
     end
     tElapsed = toc;
     tic
@@ -84,24 +85,24 @@ while ~stop && (~isReturned || ~leftStartArea)
     % In case of end of the wall (~90 degrees turn)
     if dState == 0
         if direction == 1
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.6,vrep.simx_opmode_blocking);
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.4,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.left_Motor,0.6,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.right_Motor,0.4,vrep.simx_opmode_blocking);
         else
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,0.4,vrep.simx_opmode_blocking);
-            [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,0.6,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.left_Motor,0.4,vrep.simx_opmode_blocking);
+            [returnCode]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.right_Motor,0.6,vrep.simx_opmode_blocking);
         end
     else
-        [returnCode]=vrep.simxSetJointTargetVelocity(clientID,left_Motor,V_l,vrep.simx_opmode_blocking);
-        [returnCode]=vrep.simxSetJointTargetVelocity(clientID,right_Motor,V_r,vrep.simx_opmode_blocking);
+        [returnCode]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.left_Motor,V_l,vrep.simx_opmode_blocking);
+        [returnCode]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.right_Motor,V_r,vrep.simx_opmode_blocking);
     end
 
     
-    [~,stop,~,~,~]=vrep.simxReadProximitySensor(clientID,front_LaserSensor,vrep.simx_opmode_blocking);
+    [~,stop,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.front_LaserSensor,vrep.simx_opmode_blocking);
     if leftStartArea 
         
-        isReturned = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,eps);   
+        isReturned = isNearby(startPosition,eps);   
     else
-        leftStartArea = isNearby(clientID,pioneer_Robot,reference_Box,startPosition,eps);
+        leftStartArea = isNearby(startPosition,eps);
         leftStartArea = ~leftStartArea; 
     end
     distVal=[distVal currentDistance(3)];

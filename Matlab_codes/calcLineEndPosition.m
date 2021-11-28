@@ -10,8 +10,8 @@ line_start_orientation = robotOrientationEuler_deg(3);
 x_end = xyz_start(1)+cosd(line_start_orientation)*sectionSize;
 y_end = xyz_start(2)+sind(line_start_orientation)*sectionSize;
 xy_end = [x_end,y_end,xyz_start(3)];
-fprintf('START: %.4f, %.4f \n', xyz_start(1),xyz_start(2));
-fprintf('END: %.4f, %.4f \n', x_end,y_end);
+% fprintf('START: %.4f, %.4f \n', xyz_start(1),xyz_start(2));
+% fprintf('END: %.4f, %.4f \n', x_end,y_end);
 
 end
 
