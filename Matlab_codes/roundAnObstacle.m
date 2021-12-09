@@ -5,13 +5,14 @@ function [isReturned_ret,closestPoint_ret] = roundAnObstacle(xyz_current,lineSta
     direction= 1;
     normalToWall = 1;
     leftStartArea = false;
-    turnVelocity = 0.2;
+    turnVelocity = 0.3;
     referenceDistance = 0.5;
     isStartOrientation = 0;
     startOrientation = 0;
     isReturned = false;
     leftStartArea_ret = false;
     closestPoint = [0,0];
+    minDistance = 100;
     recordDistances = true;
     
     if isEndPointGiven
@@ -37,15 +38,13 @@ function [isReturned_ret,closestPoint_ret] = roundAnObstacle(xyz_current,lineSta
         direction = 1;
         normalToWall = 1;
     end
-
+    hitPoint=xyz_current;
     while ~(isReturned && leftStartArea_ret)
         leftStartArea = leftStartArea_ret;
         turn(0,isStartOrientation,startOrientation,normalToWall,direction,turnVelocity);
-        [isReturned,leftStartArea_ret,closestPoint] = objectFollowing_controller(xyz_current,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,endpoint);
-%         fprintf('CLOSEST POINT: %.4f, %.4f \n', closestPoint_ret(1),closestPoint_ret(2));
+        [isReturned,leftStartArea_ret,closestPoint,minDistance] = objectFollowing_controller(xyz_current,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,hitPoint,endpoint,closestPoint,minDistance);
     end
         isReturned_ret = isReturned;
-        closestPoint_ret = closestPoint;
-        
+        closestPoint_ret = closestPoint;    
 end
 

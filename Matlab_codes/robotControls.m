@@ -68,6 +68,7 @@ if (simulationHandlers_t.clientID>-1)
            isStartOrientation = true; % If start orientation is 1 in turn function the robot will turn into 0 postition
            normalToWall = 0; % Values = [-1,0,1,2] 0 - normal turn function, -1/1 turn normal to the obstacle in front -1 turn right 1 turn left 2 back of the wall
            startOrientation = 0;
+           turnVelocity = 0.1;
            turn(100,isStartOrientation,startOrientation,normalToWall,direction,turnVelocity);
            isStartOrientation = false;
            moveTilObstacle();
@@ -75,13 +76,13 @@ if (simulationHandlers_t.clientID>-1)
            turn(100,isStartOrientation,startOrientation,normalToWall,direction,turnVelocity);
            [~, global_startPosition]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
            direction = 1;
-           [isReturned,leftStartArea,~] = objectFollowing_controller(global_startPosition,leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0]);
+           [isReturned,leftStartArea,~] = objectFollowing_controller(global_startPosition,leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0],[0 0],[0,0],100);
            
            % Measure the complete area
            while ~areaMeasured
                [~,local_startPosition]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
                turn(100,isStartOrientation,startOrientation,normalToWall,direction,turnVelocity);
-               [isReturned,leftStartArea,~] = objectFollowing_controller(global_startPosition,leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0]);
+               [isReturned,leftStartArea,~] = objectFollowing_controller(global_startPosition,leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0],[0 0],[0,0],100);
                [~,local_endPosition]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
                area = [area pdist([local_startPosition(1),local_startPosition(2),local_startPosition(3);local_endPosition(1),local_endPosition(2),local_endPosition(3)],'euclidean')];
                if isReturned && leftStartArea
@@ -106,7 +107,7 @@ if (simulationHandlers_t.clientID>-1)
            isEven = ~mod(stripsCount,2);
            
            % Get into startposition (NE - corner)
-           [~,~,~] = objectFollowing_controller([0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0]);
+           [~,~,~] = objectFollowing_controller([0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0],[0 0],[0,0],100);
            % Start position's coordinates
            [~,NEcorner]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
            % Goal position's coordinates (odd - SW, even - SE)
@@ -134,7 +135,7 @@ if (simulationHandlers_t.clientID>-1)
                [~,dState,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.right_LaserSensor_front,vrep.simx_opmode_blocking);
                if dState
                   direction = 1;
-                  [~,~,~] = objectFollowing_controller([0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0]); 
+                  [~,~,~] = objectFollowing_controller([0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0],[0 0],[0,0],100); 
                else
                    % Start of Object avoidance
                    [~, robotOrientationEuler]=vrep.simxGetObjectOrientation(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
@@ -153,7 +154,6 @@ if (simulationHandlers_t.clientID>-1)
                                 isEndPointGiven = false;
                                 endpoint = [0,0];
                                 [isReturned,closestPoint] = roundAnObstacle(roundStartPoint,lineStartPoint,lineEndPoint,isEndPointGiven,endpoint);
-% %                             Placeholder for obstacle avoidance function
                                 fprintf('CIRCLE DONE \n');
                                 isEndPointGiven = true;
                                 endpoint = [closestPoint(1) closestPoint(2) 0];
@@ -192,16 +192,24 @@ if (simulationHandlers_t.clientID>-1)
                
                % Turns normal to wall go on strip N->S
                normalToWall = 1;
+               isStartOrientation = false;
                turn(100,isStartOrientation,startOrientation,normalToWall,direction,turnVelocity);
                [~,local_startPosition]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
                inDivSize = isNearby(local_startPosition,divisionSize);
                while inDivSize
                    inDivSize = isNearby(local_startPosition,divisionSize);
+                   move(velocity);
                    [~,dState,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.front_LaserSensor,vrep.simx_opmode_blocking);
                    if dState
+                       move(0);
                        break;
                    end
-                   move(velocity);
+               end
+               move(0);
+               % Check if the robot reached the GoalCorner
+               isArrived = isNearby(GoalCorner,2);
+               if isArrived
+                   break;
                end
                % Turns back of the wall go on strip W->E
                normalToWall = 2;
@@ -216,7 +224,7 @@ if (simulationHandlers_t.clientID>-1)
                [~,dState,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.left_LaserSensor_front,vrep.simx_opmode_blocking);
                if dState
                    direction = -1;
-                   [~,~,~] = objectFollowing_controller([0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0]); 
+                   [~,~,~] = objectFollowing_controller([0 0 0],leftStartArea,direction,referenceDistance,[0 0],[0 0],false,false,[0 0],[0 0],[0,0],100); 
                else
                    % Start of Object avoidance
                    [~, robotOrientationEuler]=vrep.simxGetObjectOrientation(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,vrep.sim_handle_parent,vrep.simx_opmode_blocking);
@@ -235,7 +243,6 @@ if (simulationHandlers_t.clientID>-1)
                                 isEndPointGiven = false;
                                 endpoint = [0,0];
                                 [isReturned,closestPoint] = roundAnObstacle(roundStartPoint,lineStartPoint,lineEndPoint,isEndPointGiven,endpoint);
-% %                             Placeholder for obstacle avoidance function
                                 fprintf('CIRCLE DONE \n');
                                 isEndPointGiven = true;
                                 endpoint = [closestPoint(1) closestPoint(2) 0];
@@ -261,6 +268,7 @@ if (simulationHandlers_t.clientID>-1)
                             else
                                 fprintf('IT REACHED THE WALL \n');
                                 reachedTheWall = true;
+                                break;
                             end
                        end
                        % End of object avoidance
@@ -274,6 +282,7 @@ if (simulationHandlers_t.clientID>-1)
                
                % Turns normal to wall go on strip N->S
                normalToWall = -1;
+               isStartOrientation = false;
                turn(100,isStartOrientation,startOrientation,normalToWall,direction,turnVelocity);
                [~,local_startPosition]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
                inDivSize = isNearby(local_startPosition,divisionSize);
@@ -281,11 +290,13 @@ if (simulationHandlers_t.clientID>-1)
                    inDivSize = isNearby(local_startPosition,divisionSize);
                    move(velocity);
                end
+               move(0);
+               % Check if the robot reached the GoalCorner
+               isArrived = isNearby(GoalCorner,2);
+               if isArrived
+                   break;
+               end
            end
-           
-
-           
-           
            move(0);
        elseif command == 0
            disp('The script exits...')

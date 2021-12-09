@@ -4,7 +4,8 @@ function [closestPoint,minimalDistance] = closestPointFromLine(point,prevPoint,S
     
     DistanceFromLine = GetPointLineDistance(point(1),point(2),lineStartPoint(1),lineStartPoint(2),lineEndPoint(1),lineEndPoint(2));
     DistanceFromStartPoint = pdist([point(1),point(2),0;StartPoint(1),StartPoint(2),0],'euclidean');
-    if (DistanceFromLine < prevDist && DistanceFromStartPoint > 1.5)
+%     fprintf('DistanceFromLine: %.4f, DistanceFromStartPoint: %.4f \n',DistanceFromLine,DistanceFromStartPoint);
+    if (DistanceFromLine < prevDist && DistanceFromStartPoint > 2)
         minimalDistance = DistanceFromLine;
         closestPoint(1) = point(1);
         closestPoint(2) = point(2);
@@ -12,9 +13,7 @@ function [closestPoint,minimalDistance] = closestPointFromLine(point,prevPoint,S
         minimalDistance = prevDist;
         closestPoint(1) = prevPoint(1);
         closestPoint(2) = prevPoint(2);        
-    end
-
-    
+    end    
 end
 
 % Get the distance from a point (x3, y3) to

@@ -5,8 +5,8 @@ global simulationHandlers_t;
 
 leftTurn = 0;
 rightTurn = 0;
-eps = 0.03; % For normal to wall check
-eps_2 = 0.01; % For start orientation
+eps = 0.09; % For normal to wall check
+eps_goal_ori = 0.4;
 eps_3 = 0.0095; % For back turn
 phiCheck = 0;
 velocityVerySlow = 0.01;
@@ -51,16 +51,13 @@ if normalToWall == 0
        end
     
 
-       while (abs(goalOrientation - currentOrientation) > eps_2) && (abs(goalOrientation - currentOrientation + 360) > eps_2) && (abs(goalOrientation - currentOrientation - 360)  > eps_2) 
-          if (abs(goalOrientation - currentOrientation) <= 10) || (abs(goalOrientation - currentOrientation + 360) <= 10) || (abs(goalOrientation - currentOrientation - 360) <= 10)
+       while (abs(goalOrientation - currentOrientation) > eps_goal_ori) && (abs(goalOrientation - currentOrientation + 360) > eps_goal_ori) && (abs(goalOrientation - currentOrientation - 360)  > eps_goal_ori) 
+%            fprintf('OrientationDelta: %.4f \n',abs(goalOrientation - currentOrientation));
+           if (abs(goalOrientation - currentOrientation) <= 10) || (abs(goalOrientation - currentOrientation + 360) <= 10) || (abs(goalOrientation - currentOrientation - 360) <= 10)
               velocity = velocitySlow;
           else
               velocity = velocityFast;
-          end
-          if (abs(goalOrientation - currentOrientation) <= 2) || (abs(goalOrientation - currentOrientation + 360) <= 2) || (abs(goalOrientation - currentOrientation - 360) <= 2)
-              velocity = velocityVerySlow;
-          end
-        
+          end        
           if rightTurn
              [~]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.left_Motor,velocity,vrep.simx_opmode_blocking);
              [~]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.right_Motor,-velocity,vrep.simx_opmode_blocking);
@@ -108,7 +105,7 @@ elseif normalToWall == 1
     [~,detectionStateRF,detectedPointRFLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.right_LaserSensor_front,vrep.simx_opmode_blocking);
     [~,detectionStateRR,detectedPointRRLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.right_LaserSensor_rear,vrep.simx_opmode_blocking);
     % While the two sensors don't measure approx. the same value turn (while the robot is not normal to the wall)
-    while (abs(detectedPointRFLaserSensor(3) - detectedPointRRLaserSensor(3)) > eps) || ((detectionStateRF == 0) && (detectionStateRR == 0)) || (detectionStateFRA == 1)
+    while (abs(detectedPointRFLaserSensor(3) - detectedPointRRLaserSensor(3)) > eps) || ((detectionStateRF == 0) || (detectionStateRR == 0)) || (detectionStateFRA == 1)
         [~,detectionStateFRA,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.front_LaserSensor_rightAngle,vrep.simx_opmode_blocking);
         [~,detectionStateRF,detectedPointRFLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.right_LaserSensor_front,vrep.simx_opmode_blocking);
         [~,detectionStateRR,detectedPointRRLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.right_LaserSensor_rear,vrep.simx_opmode_blocking);
@@ -143,7 +140,7 @@ elseif normalToWall == -1
     [~]=vrep.simxSetJointTargetVelocity(simulationHandlers_t.clientID,simulationHandlers_t.right_Motor,-velocitySlow,vrep.simx_opmode_blocking);
     
     % While the two sensors don't measure approx. the same value turn (while the robot is not normal to the wall)
-    while (abs(detectedPointLFLaserSensor(3) - detectedPointLRLaserSensor(3)) > eps_2) || ((detectionStateLF == 0) && (detectionStateLR == 0)) || (detectionStateFLA == 1)
+    while (abs(detectedPointLFLaserSensor(3) - detectedPointLRLaserSensor(3)) > eps) || ((detectionStateLF == 0) || (detectionStateLR == 0))
         [~,detectionStateFLA,~,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.front_LaserSensor_leftAngle,vrep.simx_opmode_blocking);
         [~,detectionStateLF,detectedPointLFLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.left_LaserSensor_front,vrep.simx_opmode_blocking);
         [~,detectionStateLR,detectedPointLRLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.left_LaserSensor_rear,vrep.simx_opmode_blocking);
@@ -179,7 +176,7 @@ elseif normalToWall == 2
             [~,detectionStateBL,detectedPointBLLaserSensor,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,simulationHandlers_t.back_LaserSensor_left,vrep.simx_opmode_blocking);
         end
 
-        if ((abs(detectedPointBRLaserSensor(3) - detectedPointBLLaserSensor(3)) <= eps_2) && (detectionStateBR ~= 0) && (detectionStateBL ~= 0))
+        if ((abs(detectedPointBRLaserSensor(3) - detectedPointBLLaserSensor(3)) <= eps) && (detectionStateBR ~= 0) && (detectionStateBL ~= 0))
             velocity = velocityVerySlow;
         else
         	velocity = velocitySlow;

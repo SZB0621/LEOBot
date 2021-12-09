@@ -1,5 +1,4 @@
 function [xy_end] = calcLineEndPosition(clientID,pioneer_Robot,reference_Box,sectionSize)
-%AVOIDOBSTACLE 
 vrep=remApi('remoteApi');
 % Calculate the endpoint on the given line (from the start point &
 % orientation and the sectionSize, which is the lenght of the wall)

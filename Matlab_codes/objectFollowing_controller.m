@@ -1,4 +1,4 @@
-function [isReturned_ret,leftStartArea_ret,closestPoint_ret] = objectFollowing_controller(startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,endpoint)
+function [isReturned_ret,leftStartArea_ret,closestPoint_ret,minDistance_ret] = objectFollowing_controller(startPosition,leftStartArea,direction,referenceDistance,lineStartPoint,lineEndPoint,recordDistances,isEndPointGiven,hitPoint,endpoint,closestPoint,minDistance)
 vrep=remApi('remoteApi');
 global simulationHandlers_t;
 
@@ -32,9 +32,7 @@ end
 % Init values
 
 if recordDistances
-    minDist = 100;
-    closestPoint = [100 100];
-    [~, StartPoint]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
+    StartPoint=hitPoint;
 end
 
 % Move the robot forward
@@ -57,7 +55,7 @@ while ~stop && (~isReturned || ~leftStartArea)
     [~,dState,currentDistance,~,~]=vrep.simxReadProximitySensor(simulationHandlers_t.clientID,sensor_handler,vrep.simx_opmode_blocking);
     if recordDistances
         [~, point]=vrep.simxGetObjectPosition(simulationHandlers_t.clientID,simulationHandlers_t.pioneer_Robot,simulationHandlers_t.reference_Box,vrep.simx_opmode_blocking);
-        [closestPoint,minDist] = closestPointFromLine(point,closestPoint,StartPoint,lineStartPoint,lineEndPoint,minDist);
+        [closestPoint,minDistance] = closestPointFromLine(point,closestPoint,StartPoint,lineStartPoint,lineEndPoint,minDistance);
 %         fprintf('closest: x - %.4f, y - %.4f MinDist: %.4f \n',closestPoint(1),closestPoint(2),minDist);
     end
     tElapsed = toc;
@@ -112,8 +110,10 @@ isReturned_ret = isReturned;
 leftStartArea_ret = leftStartArea;
 if recordDistances
     closestPoint_ret = closestPoint;
+    minDistance_ret = minDistance;
 else
     closestPoint_ret = [0 0];
+    minDistance_ret = 100;
 end
 
 toc
