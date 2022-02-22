@@ -1,2 +1,2 @@
 # LEOBot
-This repository contains the files for my diploma project. An autonomous SLAM robot.
+This repository contains the files for my diploma project. A sensor based area explorer robot. It uses several laser proximity sensors to navigate in a squared area. In the implementation there are control primitives such as wall following PID, object circulation, basic movements etc.. This solution will be connected to V2 to fuse the vSlam and the sensor based exploration moreover, plan an ordered path between dedicated points in the configuration space with Rapidly-Exploring Random trees algoritm.
